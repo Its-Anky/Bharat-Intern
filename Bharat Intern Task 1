@@ -1,0 +1,126 @@
+# Question 1 Price prediction of Reliance Industries LTD using LSTM 
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+
+data = pd.read_csv('Reliance_Price_History.csv')
+
+
+data = data[['25/10/2023', '2400']]
+data['25/10/2023'] = pd.to_datetime(data['25/10/2023'])
+data.set_index('25/10/2023', inplace=True)
+
+# Normalizing the data
+scaler = MinMaxScaler()
+data['2400'] = scaler.fit_transform(data['2400'].values.reshape(-1, 1))
+
+# Defining the training and testing data
+train_size = int(len(data) * 0.8)
+train_data = data[:train_size]
+test_data = data[train_size:]
+
+
+def create_sequences(data, seq_length):
+    sequences = []
+    for i in range(len(data) - seq_length):
+        seq = data[i:i+seq_length]
+        label = data[i+seq_length]
+        sequences.append((seq, label))
+    return sequences
+
+seq_length = 10  # We can adjust this as needed
+train_sequences = create_sequences(train_data.values, seq_length)
+test_sequences = create_sequences(test_data.values, seq_length)
+
+X_train, y_train = np.array([s[0] for s in train_sequences]), np.array([s[1] for s in train_sequences])
+X_test, y_test = np.array([s[0] for s in test_sequences]), np.array([s[1] for s in test_sequences])
+
+
+model = Sequential()
+model.add(LSTM(50, input_shape=(seq_length, 1)))
+model.add(Dense(1))
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+model.fit(X_train, y_train, epochs=50, batch_size=32)
+
+
+predictions = model.predict(X_test)
+predictions = scaler.inverse_transform(predictions)  # Inverse scaling to get actual stock prices
+
+
+from sklearn.metrics import mean_squared_error
+
+mse = mean_squared_error(test_data[seq_length:], predictions)
+rmse = np.sqrt(mse)
+
+print(f'Root Mean Squared Error (RMSE): {rmse}')
+
+
+plt.figure(figsize=(12, 6))
+plt.plot(test_data.index[seq_length:], test_data[seq_length:], label='True Price', color='blue')
+plt.plot(test_data.index[seq_length:], predictions, label='Predicted Price', color='red')
+plt.title('Reliance Industries Stock Price Prediction')
+plt.xlabel('Date')
+plt.ylabel('Stock Price')
+plt.legend()
+plt.show()
+
+#code completed
+
+
+
+
+# Question 3  Number Recognition using MNIST Dataset
+
+import numpy as np
+import tensorflow 
+from tensorflow import keras
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.utils import to_categorical
+
+# Loading and preprocess the MNIST dataset
+(train_images, train_labels), (test_images, test_labels) = mnist.load_data()
+train_images = train_images / 255.0
+test_images = test_images / 255.0
+train_labels = to_categorical(train_labels)
+test_labels = to_categorical(test_labels)
+
+# Defining the neural network model
+model = Sequential()
+model.add(Flatten(input_shape=(28, 28))  # Flatten the 28x28 images
+model.add(Dense(128, activation='relu'))  # Hidden layer with ReLU activation
+model.add(Dense(10, activation='softmax'))  # Output layer with softmax activation
+
+# Compiling the model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Training the model
+model.fit(train_images, train_labels, epochs=5, batch_size=64)
+
+# Evaluating the model on the test data
+test_loss, test_accuracy = model.evaluate(test_images, test_labels)
+print(f"Test accuracy: {test_accuracy * 100:.2f}%")
+
+# Making predictions on individual test images
+predictions = model.predict(test_images)
+
+# displaying and interpreting predictions using the library Matplotlib
+import matplotlib.pyplot as plt
+
+# For a specific test image (e.g., the first image)
+index = 0
+predicted_label = np.argmax(predictions[index])
+true_label = np.argmax(test_labels[index])
+
+plt.imshow(test_images[index], cmap='gray')
+plt.title(f"Predicted: {predicted_label}, True: {true_label}")
+plt.show()
+
+#code completed
